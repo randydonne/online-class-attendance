@@ -48,6 +48,28 @@ export function studentSummary(state, id) {
   return { attendance: attended.length, mic, records };
 }
 
+export function sortedStudents(state, sortBy = 'attendance') {
+  const recordedDays = periodRecords(state).length;
+  return state.students.map((student, index) => ({
+    student,
+    index,
+    summary: studentSummary(state, student.id),
+  })).sort((left, right) => {
+    const leftRate = recordedDays ? left.summary.attendance / recordedDays : 0;
+    const rightRate = recordedDays ? right.summary.attendance / recordedDays : 0;
+    if (sortBy === 'mic') {
+      return right.summary.mic - left.summary.mic
+        || rightRate - leftRate
+        || right.summary.attendance - left.summary.attendance
+        || left.index - right.index;
+    }
+    return rightRate - leftRate
+      || right.summary.attendance - left.summary.attendance
+      || right.summary.mic - left.summary.mic
+      || left.index - right.index;
+  }).map(item => item.student);
+}
+
 export function fuzzyDistance(a, b) {
   const source = Array.from(String(a)); const target = Array.from(String(b));
   const matrix = Array.from({ length: source.length + 1 }, (_, i) => [i]);

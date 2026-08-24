@@ -6,6 +6,7 @@ import {
   matchStudents,
   periodRecords,
   studentSummary,
+  sortedStudents,
   todayRecord,
 } from '../app-core.mjs';
 
@@ -42,4 +43,14 @@ test('record lookup finds a day and no record returns undefined', () => {
   const state = buildInitialState();
   assert.equal(todayRecord(state, '2026-08-09').attendance.length, 12);
   assert.equal(todayRecord(state, '2026-08-10'), undefined);
+});
+
+test('statistics can be ordered by attendance rate or by total mic count', () => {
+  const state = buildInitialState();
+  const attendanceOrder = sortedStudents(state, 'attendance').map(student => student.name);
+  const micOrder = sortedStudents(state, 'mic').map(student => student.name);
+  assert.equal(attendanceOrder[0], '晶晶唐');
+  assert.equal(attendanceOrder.at(-1), 'King');
+  assert.equal(micOrder[0], '晶晶唐');
+  assert.equal(micOrder.at(-1), 'King');
 });

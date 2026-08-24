@@ -7,11 +7,13 @@ with sync_playwright() as p:
     browser = p.chromium.launch(headless=True, executable_path=CHROME, args=["--no-sandbox"])
     page = browser.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=2)
     errors = []
+    requests = []
     page.on("console", lambda message: errors.append(message.text) if message.type == "error" else None)
+    page.on("request", lambda request: requests.append(request.url))
     page.goto("http://127.0.0.1:4177", wait_until="domcontentloaded")
     print("loaded", flush=True)
     page.locator("#login-password").wait_for()
-    page.locator("#login-password").fill("1234")
+    assert page.locator("#login-password").input_value() == "1234"
     page.locator("#login").click()
     print("logged-in", flush=True)
     page.get_by_role("heading", name="课堂点名簿").wait_for()
@@ -20,6 +22,9 @@ with sync_playwright() as p:
     page.get_by_text("晶晶唐", exact=True).wait_for()
     assert "出勤 6/6 · 100%" in page.content()
     assert "上麦 3 次" in page.content()
+    assert page.locator(".summary-card h3").first.inner_text() == "晶晶唐"
+    page.locator('[data-sort="mic"]').evaluate("element => element.click()")
+    assert page.locator(".summary-card h3").first.inner_text() == "晶晶唐"
     page.locator('[data-tab="history"]').evaluate("element => element.click()")
     print("history", flush=True)
     page.get_by_role("button", name="查看 / 修改").first.click()
@@ -29,4 +34,5 @@ with sync_playwright() as p:
     page.screenshot(path="test/mobile-smoke.png", full_page=True)
     print("shot", flush=True)
     assert not errors, f"Browser console errors: {errors}"
+    assert not any("fonts.googleapis" in url or "tesseract.js" in url or "xlsx" in url for url in requests)
     browser.close()
